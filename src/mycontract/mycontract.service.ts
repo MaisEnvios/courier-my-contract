@@ -1,12 +1,14 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GetContracts } from '../application/services/getcontracts';
+import { GetContracts } from '../application/services/get.contracts';
 import { ILocationResponse } from './interface/location.response';
 import { CourierAuthService } from 'src/application/common/courier.auth.service';
 import { IAuthContract } from 'src/application/interface/auth.contract.interface';
 import { GetCardpostContract } from 'src/application/services/get.cardpost.contracts';
 import { IContract } from 'src/application/interface/contract.interface';
+import { ICardpostReeponse } from 'src/application/interface/cardpost.response';
+import { ICardpost } from 'src/application/interface/cardpost.interface';
 
 @Injectable()
 export class MyContractService {
@@ -56,7 +58,7 @@ export class MyContractService {
 
   }
 
-  async cardpost(username: string, password: string, id: string): Promise<any> {
+  async cardpost(username: string, password: string, id: string): Promise<ICardpostReeponse> {
 
     try {
       const authService: CourierAuthService = new CourierAuthService(
@@ -74,13 +76,32 @@ export class MyContractService {
         id,
         auth.cnpj,
       );
-      const response: any = await cardpostService.execute();
-      console.log('response', response)
+      const cardposts: ICardpost[] = await cardpostService.execute();
+      if (cardposts.length === 0) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: "Nenhum cartão de postagem relacionado ao contrato!",
+          data: null,
+        }
+        }
+      
+      console.log('response', cardposts)
 
       return {
-        statusCode: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.OK,
         message: null,
-        data: null,
+        data: {
+          administrative: cardposts[0].nuSe,
+          cardpost: cardposts.map(x => {
+            return {
+              federalid: x.cnpjCartao,
+              id: x.nuCartaoPostagem,
+              status: x.status,
+            }
+          }),
+          contract: id,
+          federalid: auth.cnpj,
+        }
       }
     } catch (error) {
       console.log('error', error)
