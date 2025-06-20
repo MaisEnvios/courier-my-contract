@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:20
 
 ENV NODE_ENV=development
 
@@ -6,8 +6,8 @@ RUN mkdir -p /var/www/courier-my-contract
 
 WORKDIR /var/www/courier-my-contract
 
-COPY . /var/www/courier-my-contract
+RUN if [-f yarn.lock]; then cp yarn.lock ./; fi
 
-RUN yarn install
+COPY . .
 
-CMD yarn run start:dev
+CMD ["yarn", "start:dev"]
