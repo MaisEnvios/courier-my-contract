@@ -1,13 +1,15 @@
-FROM node:20
-
-ENV NODE_ENV=development
-
-RUN mkdir -p /var/www/courier-my-contract
-
+# Build stage
+FROM node:20-alpine AS builder
 WORKDIR /var/www/courier-my-contract
-
-RUN if [-f yarn.lock]; then cp yarn.lock ./; fi
-
+COPY package.json yarn.lock* ./
+RUN yarn install --frozen-lockfile
 COPY . .
+RUN yarn build
 
-CMD ["yarn", "start:dev"]
+# Production stage  
+FROM node:20-alpine AS production
+WORKDIR /var/www/courier-my-contract
+COPY --from=builder /var/www/courier-my-contract/dist ./dist
+COPY --from=builder /var/www/courier-my-contract/node_modules ./node_modules
+COPY package.json ./
+CMD ["node", "dist/main"]
